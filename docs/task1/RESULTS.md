@@ -3,7 +3,7 @@
 Выполнено на загруженной базе (994 уникальные компании после дедупликации). Команда для воспроизведения:
 
 ```bash
-docker exec -i companies_db psql -U companies -d companies < queries.sql
+docker exec -i companies_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < queries.sql
 ```
 
 ## Топ-5 категорий по числу компаний

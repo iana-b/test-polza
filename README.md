@@ -1,66 +1,51 @@
-# Archive data pipeline
+# Справочник компаний
 
-Собирает записи о компаниях из постраничного JSON-архива (`page_*.json`) и загружает их в PostgreSQL.
+Тестовое задание из трёх частей поверх одной базы PostgreSQL.
+
+| Задача | Решение | Файлы |
+|---|---|---|
+| **1.** Собрать записи из архива, спроектировать схему, загрузить в PostgreSQL, приложить 3 SQL-запроса | 20 страниц (1000 записей) → 994 уникальные компании, дедупликация по `id`, индексы под запросы | [schema.sql](schema.sql), [load.py](load.py), [queries.sql](queries.sql) → [результаты](docs/task1/RESULTS.md) |
+| **2.** Страница `/companies` на Next.js с поиском и фильтром, данные серверно, без секретов | Server Component ходит в Postgres при рендере — `DATABASE_URL` не попадает в браузер. Фильтры живут в URL | [web/](web) → [скриншоты и проверка](docs/task2/PROOF.md) |
+| **3.** Загрузить `review.csv`, дать отчёт, перечислить странное | Файл оказался не выгрузкой этой базы, а другим набором — и грязным. Загружен в отдельную таблицу, чтобы не испортить архив | [load_review.py](load_review.py) → [разбор аномалий](docs/task3/ANOMALIES.md) |
 
 ## Запуск
 
-0. Скопировать `.env.example` в `.env` и заменить плейсхолдеры реальными значениями:
+Нужны Docker, Python 3.12+ и Node.js 20+.
 
-   ```bash
-   cp .env.example .env
-   ```
+Архив в репозиторий не коммитится — понадобится своя папка с `page_*.json` и `review.csv`, ниже это `<архив>`.
 
-1. Поднять базу:
+**1. База.** Скопировать `.env.example` в `.env`, заполнить своими значениями и поднять Postgres — схема применится сама:
 
-   ```bash
-   docker compose up -d
-   ```
+```bash
+cp .env.example .env
+docker compose up -d
+```
 
-   Postgres стартует на порту из `.env` (`POSTGRES_PORT`, по умолчанию `5433`), схема (`schema.sql`) применяется автоматически при первом запуске.
+**2. Загрузка архива.** Читает все страницы, дедуплицирует по `id`, вставляет с `ON CONFLICT DO NOTHING` — повторный запуск безопасен:
 
-2. Установить зависимости и загрузить данные:
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python load.py <архив>
+```
 
-   ```bash
-   python3 -m venv .venv
-   .venv/bin/pip install -r requirements.txt
-   .venv/bin/python load.py /path/to/archive
-   ```
+**3. Запросы.** Топ-5 категорий; средний рейтинг по городам среди компаний с 10+ отзывами; доля компаний с сайтом по категориям:
 
-   `/path/to/archive` — папка с файлами `page_001.json` ... `page_NNN.json`. Загрузчик читает все страницы, дедуплицирует записи по `id` и вставляет их с `ON CONFLICT (id) DO NOTHING`, поэтому повторный запуск безопасен и никогда не перезаписывает уже загруженные строки.
+```bash
+docker exec -i companies_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < queries.sql
+```
 
-3. Выполнить аналитические запросы:
+**4. Загрузка `review.csv`.** Грузится в staging-таблицу `companies_review`, а не в `companies`: данные грязные, мешать их с архивом нельзя:
 
-   ```bash
-   docker exec -i companies_db psql -U companies -d companies < queries.sql
-   ```
+```bash
+.venv/bin/python load_review.py <архив>/review.csv
+```
 
-   Результаты на реальных данных — [docs/task1/RESULTS.md](docs/task1/RESULTS.md).
+**5. Веб-страница.** В `web/.env.local` — тот же `DATABASE_URL`, что и в корневом `.env`. Откроется на http://localhost:3000/companies:
 
-4. Загрузить `review.csv` (отдельная выгрузка со своими проблемами):
-
-   ```bash
-   .venv/bin/python load_review.py /path/to/archive/review.csv
-   ```
-
-   Грузится в staging-таблицу `companies_review`, а не в `companies`: данные грязные. Скрипт печатает сводку, разбор — [docs/task3/ANOMALIES.md](docs/task3/ANOMALIES.md).
-
-5. Запустить веб-страницу `/companies`:
-
-   ```bash
-   cd web
-   cp .env.example .env.local
-   npm install
-   npm run dev
-   ```
-
-   В `.env.local` нужно указать `DATABASE_URL` от той же базы. Страница открывается на http://localhost:3000/companies — таблица компаний с поиском по названию и фильтром по городу. Скриншоты и описание проверки — [docs/task2/PROOF.md](docs/task2/PROOF.md).
-
-## Структура
-
-- [schema.sql](schema.sql) — таблицы `companies` и `companies_review`, индексы
-- [load.py](load.py) — загрузчик архива в базу
-- [load_review.py](load_review.py) — загрузчик `review.csv` в staging-таблицу со сводкой по данным
-- [queries.sql](queries.sql) — топ-5 категорий по числу компаний; средний рейтинг по городам среди компаний с 10+ отзывами; доля компаний с сайтом по категориям
-- [docker-compose.yml](docker-compose.yml) — локальный Postgres
-- [web/](web) — Next.js App Router: страница `/companies` (Server Component, запрос в Postgres на сервере)
-- [docs/](docs) — результаты и доказательства по задачам
+```bash
+cd web
+cp .env.example .env.local
+npm install
+npm run dev
+```
