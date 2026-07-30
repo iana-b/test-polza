@@ -49,3 +49,12 @@ cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+## Тесты
+
+Покрыт разбор архива: дедупликация по `id` и то, что подхватываются только `page_*.json` — лежащий рядом `review.csv` в `companies` попасть не должен.
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest
+```
