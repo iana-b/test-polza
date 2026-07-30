@@ -36,7 +36,15 @@
 
    Результаты на реальных данных — [docs/task1/RESULTS.md](docs/task1/RESULTS.md).
 
-4. Запустить веб-страницу `/companies`:
+4. Загрузить `review.csv` (отдельная выгрузка со своими проблемами):
+
+   ```bash
+   .venv/bin/python load_review.py /path/to/archive/review.csv
+   ```
+
+   Грузится в staging-таблицу `companies_review`, а не в `companies`: данные грязные. Скрипт печатает сводку, разбор — [docs/task3/ANOMALIES.md](docs/task3/ANOMALIES.md).
+
+5. Запустить веб-страницу `/companies`:
 
    ```bash
    cd web
@@ -49,8 +57,9 @@
 
 ## Структура
 
-- [schema.sql](schema.sql) — таблица `companies` и индексы
+- [schema.sql](schema.sql) — таблицы `companies` и `companies_review`, индексы
 - [load.py](load.py) — загрузчик архива в базу
+- [load_review.py](load_review.py) — загрузчик `review.csv` в staging-таблицу со сводкой по данным
 - [queries.sql](queries.sql) — топ-5 категорий по числу компаний; средний рейтинг по городам среди компаний с 10+ отзывами; доля компаний с сайтом по категориям
 - [docker-compose.yml](docker-compose.yml) — локальный Postgres
 - [web/](web) — Next.js App Router: страница `/companies` (Server Component, запрос в Postgres на сервере)
