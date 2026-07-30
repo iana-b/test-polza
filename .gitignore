@@ -6,3 +6,4 @@ venv/
 .idea/
 data_pack/
 .DS_Store
+.claude/

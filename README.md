@@ -4,7 +4,7 @@
 
 ## Запуск
 
-0. Скопировать `.env.example` в `.env` и заменить плейсхолдеры реальными значениями (например, `POSTGRES_PASSWORD=companies`, `POSTGRES_PORT=5433`, и собрать `DATABASE_URL` из этих же значений):
+0. Скопировать `.env.example` в `.env` и заменить плейсхолдеры реальными значениями:
 
    ```bash
    cp .env.example .env
@@ -34,9 +34,24 @@
    docker exec -i companies_db psql -U companies -d companies < queries.sql
    ```
 
+   Результаты на реальных данных — [docs/task1/RESULTS.md](docs/task1/RESULTS.md).
+
+4. Запустить веб-страницу `/companies`:
+
+   ```bash
+   cd web
+   cp .env.example .env.local
+   npm install
+   npm run dev
+   ```
+
+   В `.env.local` нужно указать `DATABASE_URL` от той же базы. Страница открывается на http://localhost:3000/companies — таблица компаний с поиском по названию и фильтром по городу. Скриншоты и описание проверки — [docs/task2/PROOF.md](docs/task2/PROOF.md).
+
 ## Структура
 
 - [schema.sql](schema.sql) — таблица `companies` и индексы
 - [load.py](load.py) — загрузчик архива в базу
 - [queries.sql](queries.sql) — топ-5 категорий по числу компаний; средний рейтинг по городам среди компаний с 10+ отзывами; доля компаний с сайтом по категориям
 - [docker-compose.yml](docker-compose.yml) — локальный Postgres
+- [web/](web) — Next.js App Router: страница `/companies` (Server Component, запрос в Postgres на сервере)
+- [docs/](docs) — результаты и доказательства по задачам
