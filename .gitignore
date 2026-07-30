@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 venv/
 .venv/
-.idea/g
+.idea/
+data_pack/
+.DS_Store
