@@ -29,10 +29,11 @@ def read_all_pages(data_dir: str) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("data_dir", help="Directory containing page_*.json files")
-    parser.add_argument("--dsn", default=os.environ.get(
-        "DATABASE_URL", "postgresql://companies:companies@localhost:5432/companies"
-    ))
+    parser.add_argument("--dsn", default=os.environ.get("DATABASE_URL"))
     args = parser.parse_args()
+
+    if not args.dsn:
+        parser.error("set DATABASE_URL in .env or pass --dsn")
 
     records = read_all_pages(args.data_dir)
     print(f"Read {len(records)} unique companies from {args.data_dir}")
